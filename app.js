@@ -10,7 +10,7 @@ app.use(express.json()) // Won't parse JSON data sent to server without this
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', socMedRoutes.routes);
+app.use('/', socMedRoutes);
 
 mongoose.set('strictQuery', true)
 mongoose.connect('mongodb://127.0.0.1:27017/db')

@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const postSchema = new Schema({
-  id: {type: String, required: true},
+  postId: {type: String, required: true},
   content: { type: String, required: true },
   user: { type: String, required: true },
   timestamp: { type: Date, default: moment(Date.now()).format('DD/MM/YYYY') },
@@ -16,19 +16,19 @@ const postSchema = new Schema({
     content: { type: String, required: false },
     timestamp: { type: Date, default: moment(Date.now()).format('DD/MM/YYYY') }
   }],
-  images: [{ type: String }]
+  image: [{ type: String }]
 });
 
 const Post = mongoose.model('Post', postSchema);
 
 router.post('/addPost', (req, res, next) => {
-  const { id, content, user, images } = req.body;
+  const { id, content, user, image } = req.body;
 
   new Post({ 
-    id: id,
+    postId: id,
     content: content, 
     user: user, 
-    images: images || []
+    image: image || []
   })
     .save()
     .then(result => {
@@ -55,7 +55,7 @@ router.post('/', (req, res, next) => {
 
 router.post('/getSpecificPost', (req, res, next) => {
   const { id } = req.body;
-  Post.find({ _id: id })
+  Post.find({ postId: id })
     .then(posts => {
       res.json({ success: true, post: posts[0] });
     })
@@ -67,7 +67,7 @@ router.post('/getSpecificPost', (req, res, next) => {
 
 router.post('/deleteSpecificPost', (req, res, next) => {
   const { id } = req.body;
-  Post.findOneAndRemove({ _id: id })
+  Post.findOneAndRemove({ postId: id })
     .then(resp => {
       res.json({ success: true });
     })

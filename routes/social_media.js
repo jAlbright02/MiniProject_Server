@@ -84,29 +84,17 @@ router.post('/deleteSpecificPost', (req, res, next) => {
     });
 });
 
-router.post('/getAllComments', (req, res, next) => {
-  const { id } = req.body;
-  Post.find({ postId: id })
-    .then(posts => {
-      res.json({ success: true, comments: posts[0].comments.length });
-    })
-    .catch(err => {
-      console.log('Failed to find comments: ' + err);
-      res.json({ success: false, theError: err });
-    });
-});
-
 router.post('/addComment', (req, res, next) => {
-  const { id, comment, user } = req.body;
+  const { postId, comment, user } = req.body;
 
-  Post.findById(id)
+  Post.findOne({postId: postId})
     .then(post => {
       if (post) {
-        post.comments.content = comment;
-        post.comments.user = user;
-
+        post.comments.push({ content: comment, user: user });
+        
         post.save()
           .then(updatedPost => {
+            console.log(updatedPost)
             res.json({ success: true, comment: updatedPost.comments });
           })
           .catch(err => {
@@ -123,9 +111,9 @@ router.post('/addComment', (req, res, next) => {
 });
 
 router.post('/addLike', (req, res, next) => {
-  const { id } = req.body;
+  const { postId } = req.body;
 
-  Post.findById(id)
+  Post.findOne({postId: postId})
     .then(post => {
       if (post) {
         post.likes++;
@@ -148,9 +136,9 @@ router.post('/addLike', (req, res, next) => {
 });
 
 router.post('/updateCaption', (req, res, next) => {
-  const { id, content } = req.body;
+  const { postId, content } = req.body;
 
-  Post.findById(id)
+  Post.findOne({postId: postId})
     .then(post => {
       if (post) {
         post.content = content;
@@ -172,9 +160,15 @@ router.post('/updateCaption', (req, res, next) => {
     });
 });
 
-router.post('/register', (req, res, next) => {
-  const hashedPassword = bcrypt.hash(req.query.password, 12);
-    new User({ username: req.query.username, password: hashedPassword })
+router.post('/register', async (req, res, next) => {
+  const { username, password } = req.body;
+
+  // check if both values exist
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Username and password are required' });
+  }
+  const hashedPassword = await bcrypt.hash(password, 12);
+    new User({ username: username, password: hashedPassword })
       .save()
       .then(result => {
         res.json({success: true, message: 'Added User'})
@@ -184,12 +178,12 @@ router.post('/register', (req, res, next) => {
       })
 });
 
-router.post('/login', (req, res, next) => {
+router.post('/login', async (req, res, next) => {
   try {
-    const user = User.findOne({ username: req.query.username });
+    const user = await User.findOne({ username: req.body.username });
     if (!user) return res.json({success: false, message: 'Incorrect combination of email/password, try again!'});
 
-    const matchOk = bcrypt.compare(req.query.password, user.password);
+    const matchOk = await bcrypt.compare(req.body.password, user.password);
     if (!matchOk) return res.json({success: false, message: 'Incorrect combination of email/password, try again!'});
 
     return res.json({success: true, message: 'Welcome!'});

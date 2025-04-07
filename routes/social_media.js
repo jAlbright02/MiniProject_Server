@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+const bcrypt = require('bcryptjs')
 const moment = require('moment');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
@@ -10,6 +11,8 @@ const userSchema = new Schema({
   password: {type: String, required: true}
 });
 
+const User = mongoose.model('User', userSchema);
+
 const postSchema = new Schema({
   postId: {type: String, required: true},
   content: { type: String, required: true },
@@ -18,8 +21,7 @@ const postSchema = new Schema({
   likes: { type: Number, default: 0 },
   comments: [{ 
     user: { type: String, required: false },
-    content: { type: String, required: false },
-    timestamp: { type: Date, default: moment(Date.now()).format('DD/MM/YYYY') }
+    content: { type: String, required: false }
   }],
   image: [{ type: String }]
 });
@@ -80,6 +82,122 @@ router.post('/deleteSpecificPost', (req, res, next) => {
       console.log('Failed to delete post: ' + err);
       res.send('Post not found');
     });
+});
+
+router.post('/getAllComments', (req, res, next) => {
+  const { id } = req.body;
+  Post.find({ postId: id })
+    .then(posts => {
+      res.json({ success: true, comments: posts[0].comments.length });
+    })
+    .catch(err => {
+      console.log('Failed to find comments: ' + err);
+      res.json({ success: false, theError: err });
+    });
+});
+
+router.post('/addComment', (req, res, next) => {
+  const { id, comment, user } = req.body;
+
+  Post.findById(id)
+    .then(post => {
+      if (post) {
+        post.comments.content = comment;
+        post.comments.user = user;
+
+        post.save()
+          .then(updatedPost => {
+            res.json({ success: true, comment: updatedPost.comments });
+          })
+          .catch(err => {
+            res.json({ success: false, theError: err });
+          });
+      } else {
+        res.json({ success: false, message: 'Post not found' });
+      }
+    })
+    .catch(err => {
+      console.log('Error adding comment: ' + err);
+      res.json({ success: false, theError: err });
+    });
+});
+
+router.post('/addLike', (req, res, next) => {
+  const { id } = req.body;
+
+  Post.findById(id)
+    .then(post => {
+      if (post) {
+        post.likes++;
+
+        post.save()
+          .then(updatedPost => {
+            res.json({ success: true, likes: updatedPost.likes });
+          })
+          .catch(err => {
+            res.json({ success: false, theError: err });
+          });
+      } else {
+        res.json({ success: false, message: 'Post not found' });
+      }
+    })
+    .catch(err => {
+      console.log('Error updating likes: ' + err);
+      res.json({ success: false, theError: err });
+    });
+});
+
+router.post('/updateCaption', (req, res, next) => {
+  const { id, content } = req.body;
+
+  Post.findById(id)
+    .then(post => {
+      if (post) {
+        post.content = content;
+
+        post.save()
+          .then(updatedPost => {
+            res.json({ success: true, caption: updatedPost.content });
+          })
+          .catch(err => {
+            res.json({ success: false, theError: err });
+          });
+      } else {
+        res.json({ success: false, message: 'Post not found' });
+      }
+    })
+    .catch(err => {
+      console.log('Error updating caption: ' + err);
+      res.json({ success: false, theError: err });
+    });
+});
+
+router.post('/register', (req, res, next) => {
+  const hashedPassword = bcrypt.hash(req.query.password, 12);
+    new User({ username: req.query.username, password: hashedPassword })
+      .save()
+      .then(result => {
+        res.json({success: true, message: 'Added User'})
+      })
+      .catch(err => {
+        res.json({success: false, message: 'Could not add user'})
+      })
+});
+
+router.post('/login', (req, res, next) => {
+  try {
+    const user = User.findOne({ username: req.query.username });
+    if (!user) return res.json({success: false, message: 'Incorrect combination of email/password, try again!'});
+
+    const matchOk = bcrypt.compare(req.query.password, user.password);
+    if (!matchOk) return res.json({success: false, message: 'Incorrect combination of email/password, try again!'});
+
+    return res.json({success: true, message: 'Welcome!'});
+
+  } catch (err) {
+    console.log(err);
+    res.json({success: false, message: 'Could not sign in!'})
+  }
 });
 
 // router.post('/updateSpecificPost', (req, res, next) => {

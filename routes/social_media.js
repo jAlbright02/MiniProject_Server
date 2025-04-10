@@ -194,31 +194,4 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-// router.post('/updateSpecificPost', (req, res, next) => {
-//   const { id, content, likes, comments } = req.body;
-
-//   Post.findById(id)
-//     .then(post => {
-//       if (post) {
-//         post.content = content || post.content;
-//         post.likes = likes || post.likes;
-//         post.comments = comments || post.comments;
-
-//         post.save()
-//           .then(updatedPost => {
-//             res.json({ success: true, post: updatedPost });
-//           })
-//           .catch(err => {
-//             res.json({ success: false, theError: err });
-//           });
-//       } else {
-//         res.json({ success: false, message: 'Post not found' });
-//       }
-//     })
-//     .catch(err => {
-//       console.log('Error updating post: ' + err);
-//       res.json({ success: false, theError: err });
-//     });
-// });
-
 module.exports = router;
